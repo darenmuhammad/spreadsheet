@@ -9,3 +9,5 @@ splice -> karakternya tidak mengubah array asli
 sort -> karakternya mengubah array asli
 Math.ceil
 event.target
+currying
+function reference
