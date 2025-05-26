@@ -11,3 +11,7 @@ Math.ceil
 event.target
 currying
 function reference
+immediately invoke (currying)
+common convention to prefix unused parameter
+split
+hasOwnProperty()

@@ -1,3 +1,19 @@
+// how to parsing (start)
+const infixToFunction = {
+    "+": (x, y) => x + y,
+    "-": (x, y) => x - y,
+    "*": (x, y) => x * y,
+    "/": (x, y) => x / y,
+};
+
+const infixEval = (str, regex) => str.replace(regex, (_match, arg1, operator, arg2) => infixToFunction[operator](parseFloat(arg1), parseFloat(arg2)));
+
+const highPrecedence = str => {
+    const regex = /([\d.]+)([*\/])([\d.]+)/;
+    const str2 = infixEval(str, regex);
+    return str2 === str ? str : highPrecedence(str2);
+}; // end of parsing
+
 const isEven = (num) => num % 2 === 0 ? true : false;
 const sum = (nums) => nums.reduce((acc, curr) => acc + curr, 0);
 const average = (nums) => sum(nums) / nums.length;
@@ -13,8 +29,25 @@ const median = (nums) => {
 
 // to keep track all of spreadsheet's function
 const spreadsheetFunctions = {
-    sum, average, median
+    sum,
+    average,
+    median
 }
+
+// applying function parsing logic
+const applyFunction = str => {
+    const noHigh = highPrecedence(str);
+    const infix = /([\d.]+)([+-])([\d.]+)/;
+    const str2 = infixEval(noHigh, infix);
+    const functionCall = /([a-z0-9]*)\(([0-9., ]*)\)(?!.*\()/i;
+    const toNumberList = args => args.split(",").map(parseFloat());
+    const apply = (fn, args) => spreadsheetFunctions[fn.toLowerCase()](toNumberList(args));
+    return str2.replace(
+        functionCall, (match, fn, args) =>
+        spreadsheetFunctions.hasOwnProperty(fn.toLowerCase())
+            ? apply(fn, args) : match
+    );
+};
 
 const range = (start, end) =>
     Array(end - start + 1)
@@ -33,7 +66,11 @@ const evalFormula = (x, cells) => {
     const rangeFromString = (num1, num2) => range(parseInt(num1), parseInt(num2));
     const elemValue = num => character => idToText(character + num);
     const addCharacters = character1 => character2 => num => charRange(character1, character2).map(elemValue(num));
-    const rangeExpanded = x.replace(rangeRegex);
+    const rangeExpanded = x.replace(rangeRegex, (_match, char1, num1, char2, num2) => rangeFromString(num1, num2).map(addCharacters(char1)(char2)));
+    const cellRegex = /[A-J][1-9][0-9]?/gi;
+    const cellExpanded = rangeExpanded.replace(cellRegex, match => idToText(match.toUpperCase()));
+    const functionExpanded = applyFunction(cellExpanded);
+    return functionExpanded === x ? functionExpanded : evalFormula(functionExpanded, cells);
 }
 
 window.onload = () => {
@@ -62,7 +99,7 @@ window.onload = () => {
 const update = (event) => {
     const element = event.target;
     const value = element.value.replace(/\s/g, "");
-    if (!value.includes(element.id) && value[0] === "=") {
-
+    if (!value.includes(element.id) && value.startsWith('=')) {
+        element.value = evalFormula(value.slice(1), document.getElementById("container").children);
     }
 }
